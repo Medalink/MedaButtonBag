@@ -76,6 +76,9 @@ local function CreatePanel()
         minHeight = 400,
     })
 
+    -- Add addon icon watermark
+    panel:SetAddonIcon("Interface\\Icons\\INV_Misc_Bag_10_Blue")
+
     -- Restore saved state
     if MedaButtonBag.db.settingsPanelState then
         panel:RestoreState(MedaButtonBag.db.settingsPanelState)
@@ -165,7 +168,7 @@ local function CreatePanel()
     yPos = yPos - 40
 
     -- Max rows slider
-    local rowLabel = CreateLabel(scrollContent, "Max Rows (0=∞):", "TOPLEFT", scrollContent, "TOPLEFT", 10, yPos)
+    local rowLabel = CreateLabel(scrollContent, "Max Rows (0=Auto):", "TOPLEFT", scrollContent, "TOPLEFT", 10, yPos)
     local rowSlider = MedaUI:CreateSlider(scrollContent, 180, 0, 10, 1)
     rowSlider:SetPoint("LEFT", rowLabel, "RIGHT", 10, 0)
     rowSlider:SetValue(MedaButtonBag.db.settings.rows)

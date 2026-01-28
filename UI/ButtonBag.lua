@@ -284,10 +284,16 @@ end
 function ButtonBag:UpdateLockState()
     local locked = MedaButtonBag.db.settings.locked
 
+    -- Guard: ensure ButtonBag is fully initialized
+    if not self.container or not self.hitbox then return end
+
+    -- Always ensure hitbox is shown (it's invisible but needed for hover detection)
+    self.hitbox:Show()
+
     if locked then
         -- Auto-hide mode: start hidden
-        self.moveIndicator:Hide()
-        self.moveText:Hide()
+        if self.moveIndicator then self.moveIndicator:Hide() end
+        if self.moveText then self.moveText:Hide() end
 
         if not self.isHovered then
             self.container:SetAlpha(0)
@@ -295,8 +301,8 @@ function ButtonBag:UpdateLockState()
         end
     else
         -- Unlocked mode: always visible with move indicator
-        self.fadeIn:Stop()
-        self.fadeOut:Stop()
+        if self.fadeIn then self.fadeIn:Stop() end
+        if self.fadeOut then self.fadeOut:Stop() end
 
         if self.fadeOutTimer then
             self.fadeOutTimer:Cancel()
@@ -305,13 +311,16 @@ function ButtonBag:UpdateLockState()
 
         self.container:SetAlpha(1)
         self.container:Show()
-        self.moveIndicator:Show()
-        self.moveText:Show()
+        if self.moveIndicator then self.moveIndicator:Show() end
+        if self.moveText then self.moveText:Show() end
     end
 end
 
 -- Update container size (called by ButtonManager)
 function ButtonBag:UpdateContainerSize(width, height)
+    -- Guard: ensure ButtonBag is initialized
+    if not self.hitbox then return end
+
     -- Minimum size
     width = math.max(width, 40)
     height = math.max(height, 40)
@@ -321,6 +330,8 @@ end
 
 -- Update background color from settings
 function ButtonBag:UpdateBackgroundColor()
+    if not self.container then return end
+
     local settings = MedaButtonBag.db.settings
     local r, g, b = unpack(settings.bgColor)
     local a = settings.bgOpacity
@@ -334,11 +345,17 @@ end
 
 -- Get the button container frame (for reparenting buttons)
 function ButtonBag:GetButtonContainer()
-    return self.buttonContainer
+    return self.buttonContainer  -- May be nil if not initialized
+end
+
+-- Check if ButtonBag is initialized
+function ButtonBag:IsInitialized()
+    return self.hitbox ~= nil and self.container ~= nil
 end
 
 -- Show the bag
 function ButtonBag:Show()
+    if not self.hitbox then return end
     self.hitbox:Show()
     if not MedaButtonBag.db.settings.locked or self.isHovered then
         self.container:Show()
@@ -348,11 +365,13 @@ end
 
 -- Hide the bag
 function ButtonBag:Hide()
+    if not self.hitbox then return end
     self.hitbox:Hide()
 end
 
 -- Toggle visibility
 function ButtonBag:Toggle()
+    if not self.hitbox then return end
     if self.hitbox:IsShown() then
         self:Hide()
     else
