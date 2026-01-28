@@ -239,7 +239,7 @@ function ButtonBag:SavePosition()
     local point, relativeTo, relativePoint, x, y = self.hitbox:GetPoint()
     MedaButtonBag.db.position = {
         point = point,
-        relativeTo = relativeTo and relativeTo:GetName() or nil,
+        relativeTo = relativeTo == Minimap and "Minimap" or (relativeTo and relativeTo:GetName() or nil),
         relativePoint = relativePoint,
         x = x,
         y = y,
@@ -251,13 +251,20 @@ function ButtonBag:ApplyPosition()
     local pos = MedaButtonBag.db.position
     self.hitbox:ClearAllPoints()
 
-    local relativeTo = pos.relativeTo and _G[pos.relativeTo] or UIParent
+    -- Handle relativeTo - default to Minimap if nil or "Minimap"
+    local relativeTo = UIParent
+    if pos.relativeTo == "Minimap" or pos.relativeTo == nil then
+        relativeTo = Minimap
+    elseif pos.relativeTo and _G[pos.relativeTo] then
+        relativeTo = _G[pos.relativeTo]
+    end
+
     self.hitbox:SetPoint(
         pos.point or "TOPRIGHT",
         relativeTo,
-        pos.relativePoint or "TOPRIGHT",
-        pos.x or -20,
-        pos.y or -200
+        pos.relativePoint or "BOTTOMRIGHT",
+        pos.x or 0,
+        pos.y or -10
     )
 end
 
@@ -265,10 +272,10 @@ end
 function ButtonBag:ResetPosition()
     MedaButtonBag.db.position = {
         point = "TOPRIGHT",
-        relativeTo = nil,
-        relativePoint = "TOPRIGHT",
-        x = -20,
-        y = -200,
+        relativeTo = "Minimap",
+        relativePoint = "BOTTOMRIGHT",
+        x = 0,
+        y = -10,
     }
     self:ApplyPosition()
 end

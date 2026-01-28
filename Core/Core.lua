@@ -22,16 +22,16 @@ local DEFAULT_DB = {
     -- Container position
     position = {
         point = "TOPRIGHT",
-        relativeTo = nil,
-        relativePoint = "TOPRIGHT",
-        x = -20,
-        y = -200,
+        relativeTo = "Minimap",  -- Anchor to Minimap
+        relativePoint = "BOTTOMRIGHT",
+        x = 0,
+        y = -10,  -- Just below the minimap
     },
 
     -- Settings
     settings = {
         enabled = true,
-        locked = true,           -- When locked: invisible until hovered
+        locked = false,          -- Start unlocked so users can see and position it
 
         -- Layout
         columns = 4,             -- Icons per row
