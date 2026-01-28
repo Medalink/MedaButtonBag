@@ -71,8 +71,22 @@ local function CreatePanel()
 
     -- Use MedaUI Panel
     panel = MedaUI:CreatePanel("MedaButtonBagSettings", PANEL_WIDTH, PANEL_HEIGHT, "MedaButtonBag Settings")
-    panel:SetPoint("CENTER")
-    panel:Hide()
+    panel:SetResizable(true, {
+        minWidth = 350,
+        minHeight = 400,
+    })
+
+    -- Restore saved state
+    if MedaButtonBag.db.settingsPanelState then
+        panel:RestoreState(MedaButtonBag.db.settingsPanelState)
+    end
+
+    -- Save state on move/resize
+    local function saveState(state)
+        MedaButtonBag.db.settingsPanelState = state
+    end
+    panel.OnMove = function(_, state) saveState(state) end
+    panel.OnResize = function(_, state) saveState(state) end
 
     -- Allow ESC to close
     tinsert(UISpecialFrames, "MedaButtonBagSettings")
