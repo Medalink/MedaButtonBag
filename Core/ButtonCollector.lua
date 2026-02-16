@@ -186,18 +186,14 @@ function ButtonCollector:CollectLibDBIcon()
 
     -- Iterate all registered buttons
     for name, button in pairs(LibDBIcon.objects) do
-        -- Skip our own button
-        if name ~= "MedaButtonBag" then
-            self:RegisterButton(button, "libdbicon", name)
-        end
+        -- Include our own button so it is always available in the bag.
+        self:RegisterButton(button, "libdbicon", name)
     end
 
     -- Register callback for buttons created after initialization
     if not self.libDBIconCallbackRegistered then
         LibDBIcon.RegisterCallback(self, "LibDBIcon_IconCreated", function(_, button, name)
-            if name ~= "MedaButtonBag" then
-                self:RegisterButton(button, "libdbicon", name)
-            end
+            self:RegisterButton(button, "libdbicon", name)
         end)
         self.libDBIconCallbackRegistered = true
     end

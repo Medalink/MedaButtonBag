@@ -14,6 +14,19 @@ ButtonManager.managedButtons = {}
 -- Layout order (for consistent ordering)
 ButtonManager.buttonOrder = {}
 
+local function SortButtonsWithPinnedAddon(manager, a, b)
+    local ownKey = "ldb:MedaButtonBag"
+    if a == ownKey and b ~= ownKey then
+        return true
+    elseif b == ownKey and a ~= ownKey then
+        return false
+    end
+
+    local infoA = manager.managedButtons[a]
+    local infoB = manager.managedButtons[b]
+    return (infoA and infoA.name or "") < (infoB and infoB.name or "")
+end
+
 -- Check if collection is enabled
 function ButtonManager:IsEnabled()
     return MedaButtonBag.db and MedaButtonBag.db.settings.enabled
@@ -31,9 +44,7 @@ function ButtonManager:OnButtonDiscovered(key, info)
 
     -- Sort by name for consistent ordering
     table.sort(self.buttonOrder, function(a, b)
-        local infoA = self.managedButtons[a]
-        local infoB = self.managedButtons[b]
-        return (infoA.name or "") < (infoB.name or "")
+        return SortButtonsWithPinnedAddon(self, a, b)
     end)
 
     -- Collect the button (reparent to bag)
@@ -256,9 +267,7 @@ function ButtonManager:CollectAllButtons()
 
     -- Sort order
     table.sort(self.buttonOrder, function(a, b)
-        local infoA = self.managedButtons[a]
-        local infoB = self.managedButtons[b]
-        return (infoA.name or "") < (infoB.name or "")
+        return SortButtonsWithPinnedAddon(self, a, b)
     end)
 
     self:RefreshLayout()

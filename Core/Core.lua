@@ -139,8 +139,38 @@ end
 -- Debug print helper
 function MedaButtonBag:Debug(...)
     if self.debug then
-        print("|cFFE5C46FMedaButtonBag Debug:|r", ...)
+        local parts = {}
+        for i = 1, select("#", ...) do
+            parts[#parts + 1] = tostring(select(i, ...))
+        end
+        local msg = table.concat(parts, " ")
+
+        local MedaDebug = _G.MedaDebug
+        if MedaDebug and MedaDebug.LogInternal then
+            MedaDebug:LogInternal("MedaButtonBag", msg, "INFO")
+        else
+            print("|cFFE5C46FMedaButtonBag Debug:|r", msg)
+        end
     end
+end
+
+-- Reset all configurable settings to defaults (does not reset position/minimap)
+function MedaButtonBag:ResetToDefaults()
+    if not self.db then return end
+
+    self.db.settings = CopyTable(DEFAULT_DB.settings)
+
+    if self.ButtonManager then
+        self.ButtonManager:SetEnabled(self.db.settings.enabled)
+        self.ButtonManager:UpdateButtonSizes()
+    end
+
+    if self.ButtonBag then
+        self.ButtonBag:UpdateBackgroundColor()
+        self.ButtonBag:UpdateLockState()
+    end
+
+    print("|cFFE5C46FMedaButtonBag:|r Settings reset to defaults.")
 end
 
 -- Event handlers
@@ -238,6 +268,9 @@ function MedaButtonBag:InitializeMinimapButton()
         end,
         self.db.minimap
     )
+
+    -- Apply persisted visibility for the standalone minimap button.
+    self:SetMinimapButtonShown(not self.db.minimap.hide)
 end
 
 -- Show/hide our own minimap button

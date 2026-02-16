@@ -317,6 +317,19 @@ local function CreatePanel()
             MedaButtonBag.ButtonBag:ResetPosition()
         end
     end)
+
+    -- Reset all settings button
+    local resetDefaultsBtn = MedaUI:CreateButton(scrollContent, "Reset to Defaults", 120, 26)
+    resetDefaultsBtn:SetPoint("LEFT", resetBtn, "RIGHT", 10, 0)
+    resetDefaultsBtn:SetScript("OnClick", function()
+        if MedaButtonBag.ResetToDefaults then
+            MedaButtonBag:ResetToDefaults()
+        end
+        if panel and panel:IsShown() then
+            SettingsPanel:Hide()
+            SettingsPanel:Show()
+        end
+    end)
     yPos = yPos - 40
 
     -- Set content height
