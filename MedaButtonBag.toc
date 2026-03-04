@@ -5,6 +5,7 @@
 ## Version: @project-version@
 ## SavedVariables: MedaButtonBagDB
 ## IconTexture: Interface\Icons\INV_Misc_Bag_10_Blue
+## Dependencies: AbstractFramework
 
 # Embedded Libraries
 Libs\MedaUI\MedaUI.xml
