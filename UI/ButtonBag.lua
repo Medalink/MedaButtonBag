@@ -39,7 +39,7 @@ ButtonBag.containerEdgeFades = nil
 
 -- Get MedaUI theme
 local function GetTheme()
-    local MedaUI = LibStub("MedaUI-1.0", true)
+    local MedaUI = LibStub("MedaUI-2.0", true)
     if MedaUI then
         return MedaUI:GetTheme()
     end
@@ -67,7 +67,7 @@ end
 
 -- Create the main container frames
 function ButtonBag:CreateFrames()
-    local MedaUI = LibStub("MedaUI-1.0", true)
+    local MedaUI = LibStub("MedaUI-2.0", true)
     local Theme = GetTheme()
     local settings = MedaButtonBag.db.settings
 

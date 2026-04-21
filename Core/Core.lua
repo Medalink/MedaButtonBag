@@ -9,6 +9,8 @@ _G.MedaButtonBag = MedaButtonBag
 
 -- Addon version
 MedaButtonBag.version = "1.0.0"
+local MedaUI = LibStub("MedaUI-2.0", true)
+local logger
 
 -- Default database schema
 local DEFAULT_DB = {
@@ -49,6 +51,15 @@ local DEFAULT_DB = {
         -- Button blacklist (buttons to not collect)
         blacklist = {},          -- { ["ButtonName"] = true }
     },
+
+    options = {
+        logging = {
+            enabled = true,
+            minLevel = "WARN",
+            combatMode = "always",
+            chatFallback = false,
+        },
+    },
 }
 
 -- Main event frame
@@ -80,7 +91,83 @@ local function InitializeDB()
         end
     end
 
+    if MedaUI and MedaUI.NormalizeLogPolicy then
+        MedaButtonBagDB.options.logging = MedaUI:NormalizeLogPolicy(MedaButtonBagDB.options.logging)
+    end
+
     MedaButtonBag.db = MedaButtonBagDB
+end
+
+local function GetLoggingPolicy()
+    if MedaUI and MedaUI.NormalizeLogPolicy and MedaButtonBag.db and MedaButtonBag.db.options then
+        return MedaUI:NormalizeLogPolicy(MedaButtonBag.db.options.logging)
+    end
+
+    return {
+        enabled = true,
+        minLevel = MedaButtonBag.debug and "DEBUG" or "WARN",
+        combatMode = "always",
+        chatFallback = false,
+    }
+end
+
+local function UpdateDebugFlag()
+    local policy = GetLoggingPolicy()
+    MedaButtonBag.debug = policy.enabled ~= false and policy.minLevel == "DEBUG"
+    return MedaButtonBag.debug
+end
+
+local function SetLoggingPolicy(policy)
+    if not MedaButtonBag.db or not MedaButtonBag.db.options then
+        return GetLoggingPolicy()
+    end
+
+    local normalized = MedaUI and MedaUI.NormalizeLogPolicy and MedaUI:NormalizeLogPolicy(policy) or policy
+    MedaButtonBag.db.options.logging = normalized
+    UpdateDebugFlag()
+    return normalized
+end
+
+local function EnsureLogger()
+    if not MedaUI or not MedaUI.CreateAddonLogger then
+        return nil
+    end
+
+    if not logger then
+        logger = MedaUI:CreateAddonLogger({
+            addonName = "MedaButtonBag",
+            color = { 0.9, 0.77, 0.44 },
+            prefix = "[MedaButtonBag]",
+            getPolicy = GetLoggingPolicy,
+            setPolicy = SetLoggingPolicy,
+        })
+    end
+
+    return logger
+end
+
+function MedaButtonBag:GetLogPolicy()
+    return GetLoggingPolicy()
+end
+
+function MedaButtonBag:SetLogPolicy(policy)
+    return SetLoggingPolicy(policy)
+end
+
+function MedaButtonBag:CanLog(level)
+    local activeLogger = EnsureLogger()
+    return activeLogger and activeLogger:CanEmit(level or "INFO") or false
+end
+
+function MedaButtonBag:SetDebugMode(enabled)
+    local policy = GetLoggingPolicy()
+    policy.minLevel = enabled and "DEBUG" or "WARN"
+    SetLoggingPolicy(policy)
+    return self.debug
+end
+
+function MedaButtonBag:IsDebugModeEnabled()
+    return self.debug == true
 end
 
 -- Slash command handler
@@ -123,7 +210,7 @@ local function SlashCommandHandler(msg)
         print("|cFFE5C46FMedaButtonBag:|r Rescanning for minimap buttons...")
     elseif cmd == "debug" then
         -- Toggle debug mode
-        MedaButtonBag.debug = not MedaButtonBag.debug
+        MedaButtonBag:SetDebugMode(not MedaButtonBag.debug)
         print("|cFFE5C46FMedaButtonBag:|r Debug mode " .. (MedaButtonBag.debug and "enabled" or "disabled"))
     else
         -- Show help
@@ -138,20 +225,24 @@ end
 
 -- Debug print helper
 function MedaButtonBag:Debug(...)
-    if self.debug then
-        local parts = {}
-        for i = 1, select("#", ...) do
-            parts[#parts + 1] = tostring(select(i, ...))
-        end
-        local msg = table.concat(parts, " ")
-
-        local MedaDebug = _G.MedaDebug
-        if MedaDebug and MedaDebug.LogInternal then
-            MedaDebug:LogInternal("MedaButtonBag", msg, "INFO")
-        else
-            print("|cFFE5C46FMedaButtonBag Debug:|r", msg)
-        end
+    if not self.debug then
+        return
     end
+
+    local activeLogger = EnsureLogger()
+    if not activeLogger or not activeLogger:CanEmit("DEBUG") then
+        return
+    end
+
+    local argCount = select("#", ...)
+    local args = { ... }
+    activeLogger:EmitLazy("DEBUG", function()
+        local parts = {}
+        for index = 1, argCount do
+            parts[#parts + 1] = tostring(args[index])
+        end
+        return table.concat(parts, " ")
+    end)
 end
 
 -- Reset all configurable settings to defaults (does not reset position/minimap)
@@ -159,6 +250,11 @@ function MedaButtonBag:ResetToDefaults()
     if not self.db then return end
 
     self.db.settings = CopyTable(DEFAULT_DB.settings)
+    self.db.options = CopyTable(DEFAULT_DB.options)
+    if MedaUI and MedaUI.NormalizeLogPolicy then
+        self.db.options.logging = MedaUI:NormalizeLogPolicy(self.db.options.logging)
+    end
+    UpdateDebugFlag()
 
     if self.ButtonManager then
         self.ButtonManager:SetEnabled(self.db.settings.enabled)
@@ -179,6 +275,10 @@ local function OnAddonLoaded(self, event, loadedAddon)
 
     -- Initialize database
     InitializeDB()
+    UpdateDebugFlag()
+    if EnsureLogger() then
+        logger:RefreshSink()
+    end
 
     -- Register slash commands
     SLASH_MEDABUTTONBAG1 = "/mbb"
@@ -192,6 +292,10 @@ local function OnAddonLoaded(self, event, loadedAddon)
 end
 
 local function OnPlayerLogin(self, event)
+    if EnsureLogger() then
+        logger:RefreshSink()
+    end
+
     -- Initialize modules after a short delay to let other addons load their buttons
     C_Timer.After(1, function()
         -- Initialize button collector
@@ -246,7 +350,6 @@ eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 -- ============================================================================
 
 function MedaButtonBag:InitializeMinimapButton()
-    local MedaUI = LibStub("MedaUI-1.0", true)
     if not MedaUI then return end
 
     self.minimapButton = MedaUI:CreateMinimapButton(

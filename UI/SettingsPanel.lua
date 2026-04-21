@@ -17,7 +17,8 @@ local ITEM_SPACING = 10
 local LABEL_WIDTH = 140
 
 -- Get MedaUI library for theming
-local MedaUI = LibStub("MedaUI-1.0")
+local MedaUI = LibStub("MedaUI-2.0")
+local Pixel = MedaUI.Pixel
 local THEME = MedaUI:GetTheme()
 
 -- Main panel frame
@@ -96,22 +97,14 @@ local function CreatePanel()
 
     local content = panel:GetContent()
 
-    -- Create scroll frame for content
-    scrollFrame = CreateFrame("ScrollFrame", nil, content, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", 5, -5)
-    scrollFrame:SetPoint("BOTTOMRIGHT", -25, 5)
+    -- Scroll frame for content (AF custom scrollbar)
+    local scrollParent = MedaUI:CreateScrollFrame(content)
+    Pixel.SetPoint(scrollParent, "TOPLEFT", 5, -5)
+    Pixel.SetPoint(scrollParent, "BOTTOMRIGHT", -5, 5)
+    scrollParent:SetScrollStep(30)
 
-    -- Style the scrollbar
-    local scrollBar = scrollFrame.ScrollBar
-    if scrollBar then
-        scrollBar:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", 2, -16)
-        scrollBar:SetPoint("BOTTOMLEFT", scrollFrame, "BOTTOMRIGHT", 2, 16)
-    end
-
-    -- Scroll content frame
-    scrollContent = CreateFrame("Frame", nil, scrollFrame)
-    scrollContent:SetSize(PANEL_WIDTH - 40, 800)  -- Will be resized based on content
-    scrollFrame:SetScrollChild(scrollContent)
+    scrollContent = scrollParent.scrollContent
+    Pixel.SetHeight(scrollContent, 800)
 
     -- Track Y position for layout
     local yPos = -10
@@ -265,6 +258,27 @@ local function CreatePanel()
     yPos = yPos - SECTION_SPACING
 
     -- ========================================================================
+    -- Logging Section
+    -- ========================================================================
+    CreateSectionHeader(scrollContent, "Logging", yPos)
+    yPos = yPos - 30
+
+    local logPolicyControls = MedaUI:BuildLogPolicyControls(scrollContent, function()
+        return MedaButtonBag:GetLogPolicy()
+    end, function(policy)
+        MedaButtonBag:SetLogPolicy(policy)
+    end, {
+        width = 190,
+        includeChatFallback = true,
+    })
+    logPolicyControls:SetPoint("TOPLEFT", 10, yPos)
+    SettingsPanel.logPolicyControls = logPolicyControls
+    yPos = yPos - logPolicyControls:GetHeight() - 10
+
+    CreateDivider(scrollContent, yPos)
+    yPos = yPos - SECTION_SPACING
+
+    -- ========================================================================
     -- Buttons Section
     -- ========================================================================
     CreateSectionHeader(scrollContent, "Collected Buttons", yPos)
@@ -286,15 +300,14 @@ local function CreatePanel()
     listContainer:SetBackdropBorderColor(unpack(THEME.border))
     SettingsPanel.listContainer = listContainer
 
-    -- Button list scroll frame
-    local listScroll = CreateFrame("ScrollFrame", nil, listContainer, "UIPanelScrollFrameTemplate")
-    listScroll:SetPoint("TOPLEFT", 5, -5)
-    listScroll:SetPoint("BOTTOMRIGHT", -25, 5)
+    -- Button list scroll frame (AF custom scrollbar)
+    local listScrollParent = MedaUI:CreateScrollFrame(listContainer)
+    Pixel.SetPoint(listScrollParent, "TOPLEFT", 5, -5)
+    Pixel.SetPoint(listScrollParent, "BOTTOMRIGHT", -5, 5)
+    listScrollParent:SetScrollStep(30)
 
-    local listContent = CreateFrame("Frame", nil, listScroll)
-    listContent:SetSize(PANEL_WIDTH - 90, 300)
-    listScroll:SetScrollChild(listContent)
-    SettingsPanel.listContent = listContent
+    SettingsPanel.listContent = listScrollParent.scrollContent
+    Pixel.SetHeight(listScrollParent.scrollContent, 300)
 
     yPos = yPos - 160
 
@@ -400,6 +413,9 @@ end
 -- Show the settings panel
 function SettingsPanel:Show()
     local p = CreatePanel()
+    if SettingsPanel.logPolicyControls then
+        SettingsPanel.logPolicyControls:Refresh()
+    end
     RefreshButtonList()
     p:Show()
 end
