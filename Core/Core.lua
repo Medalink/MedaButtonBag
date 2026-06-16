@@ -8,7 +8,7 @@ local addonName, MedaButtonBag = ...
 _G.MedaButtonBag = MedaButtonBag
 
 -- Addon version
-MedaButtonBag.version = "1.0.2"
+MedaButtonBag.version = "1.0.3"
 local MedaUI = LibStub("MedaUI-2.0", true)
 local logger
 
